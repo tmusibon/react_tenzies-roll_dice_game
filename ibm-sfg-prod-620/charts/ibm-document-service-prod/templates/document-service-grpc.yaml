@@ -1,0 +1,23 @@
+# (C) Copyright 2023 Syncsort Incorporated. All rights reserved.
+
+{{- include "sch.config.init" (list . "documentSvc.sch.chart.config.values") -}}
+{{- $compName :=  .sch.chart.components.appInstance.name }}
+{{- $grpcCompName := (cat $compName "grpc" | replace " " "") }}
+apiVersion: v1
+kind: Service
+metadata:
+  annotations: 
+    prometheus.io/scrape: 'true'
+  name: {{ include "sch.names.fullCompName" (list . $grpcCompName) }}
+  labels:
+{{ include "sch.metadata.labels.standard" (list . $compName) | indent 4 }}
+spec:
+  clusterIP: None
+  ports:
+    - port: {{ .Values.service.externalGrpcPort }}
+      targetPort: {{ .Values.application.server.grpcport }}
+      protocol: TCP
+      name: "grpc"
+  selector:
+{{ include "sch.metadata.labels.standard" (list . $compName) | indent 4 }}
+    

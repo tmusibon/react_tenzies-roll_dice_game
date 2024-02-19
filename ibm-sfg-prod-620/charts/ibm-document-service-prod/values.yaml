@@ -1,0 +1,236 @@
+# (C) Copyright 2023 Syncsort Incorporated. All rights reserved.
+
+###############################################################################
+######################## IBM Document Service ####################################
+###############################################################################
+
+# Change license to true to indicate have read and agree to license agreements : http://ibm.biz/<product>-license 
+license: false
+
+## deployment replicaCount - optional field dependent on workload, if
+## have predefined replicas or not work with certain counts
+replicaCount: 1
+
+nameOverride:
+
+fullnameOverride:
+
+###############################################################################
+## Common image variables
+###############################################################################
+image:
+  repository: cp.icr.io/cp/ibm-sfg/sfg-documentservice
+  pullPolicy: IfNotPresent
+  tag: 1.0.0.0
+  digest: 
+  pullSecret: ""
+
+# Specify architecture (amd64, ppc64le, s390x) and weight to be  used for scheduling as follows : 
+#   0 - Do not use
+#   1 - Least preferred
+#   2 - No Preference
+#   3 - Most preferred
+arch:
+  amd64: "2 - No Preference"
+  ppc64le: "2 - No Preference"
+  s390x: "2 - No Preference"
+
+serviceAccount:
+  name: default
+
+persistence:
+  enabled: true
+  useDynamicProvisioning: false
+
+appLogsPVC:
+  enabled: false
+  storageClassName: ""
+  selector:
+    label: "intent"
+    value: "logs"
+  accessMode: ReadWriteMany
+  size: 500Mi
+
+extraPVCs: []
+  #- name:
+  #  storageClassName:
+  #  selector:
+  #    label:
+  #    value:
+  #  accessMode:
+  #  size:
+  #  mountPath:
+  
+logs:
+  # true if user wish to redirect the application logs to console else false. If provided value is true , then application logs will reside inside containers. No volume mapping will be used.
+  enableAppLogOnConsole: true
+
+security:
+  supplementalGroups: [65534]
+  fsGroup: 
+  runAsUser: 
+  runAsGroup: 
+  
+livenessProbe:
+  initialDelaySeconds: 30
+  timeoutSeconds: 5
+  periodSeconds: 60
+    
+readinessProbe:
+  initialDelaySeconds: 30
+  timeoutSeconds: 5
+  periodSeconds: 60
+  
+# For easy URL access during testing may use NodePort instead of ClusterIP,
+# but for prod ensure the correct type is defaulted.
+service:
+  type: ClusterIP
+  externalPort: 443
+  externalGrpcPort: 8044
+
+ingress:
+  enabled: false
+  # Used to create an Ingress record.
+  host: document-svc.local
+  tls: 
+    #applies only in case of kubernetes ingress
+    secretName: ""
+  controller: nginx
+  # Additional annotations for ingress/routes resource
+  annotations: {}
+  # Additional labels for ingress/routes resource
+  labels: {}
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+  podAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution: []
+    preferredDuringSchedulingIgnoredDuringExecution: []
+  
+topologySpreadConstraints: []
+  #- maxSkew: 1
+  #  topologyKey: topology.kubernetes.io/zone
+  #  whenUnsatisfiable: DoNotSchedule
+  #- maxSkew: 1
+  #  topologyKey: kubernetes.io/hostname
+  #  whenUnsatisfiable: ScheduleAnyway
+    
+# for Taints and Tolerations  
+tolerations: [] 
+  #- key: key1
+  #  operator: Equal
+  #  value: value1
+  #  effect: NoExecute
+  #  tolerationSeconds: 3600
+  #- key: key2
+  #  operator: Exists
+  #  effect: NoSchedule
+  
+## Configure resource requests and limits
+## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+resources:
+  limits:
+    cpu: 2000m
+    memory: 8Gi
+    ephemeral-storage: "4Gi"
+  requests:
+    cpu: 1000m
+    memory: 4Gi
+    ephemeral-storage: "2Gi"
+
+## Configure autoscaling specs
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+
+env:
+  tz: "UTC"
+  extraEnvs: []
+  #- name: FOO
+  #  valueFrom:
+  #    secretKeyRef:
+  #      name: secret-name
+  #      key: FOO
+  #- name: BAR
+  #  valueFrom:
+  #    configMapRef:
+  #      name: configmap-name
+  #      key: BAR
+  #- name: FOOBAR
+  #  value: foobar
+## if set application.server.ssl.enabled = false then documentService.sslEnabled must be set false.
+## possible values for the application.logging.level can be one of the following options: DEBUG, ERROR, INFO, FATAL, OFF, TRACE or WARN.
+## `jvmOptions`: JVM configuration options for memory management. `XX:+HeapDumpOnOutOfMemoryError`: Generates heap dump when OutOfMemoryError occurs. `XX:HeapDumpPath`: Specifies heap dump file location.
+application:
+  server:
+    port: 8043
+    grpcport: 8044
+    jetty:
+      acceptors: 10
+      maxHttpPostSize: 0
+      selectors: 10
+    ssl:
+      enabled: true
+      tlsSecretName:
+      trustStoreType: PKCS12 
+      trustStoreSecretName:
+      clientAuth: want
+      ciphers: 
+  logging:
+    level: ERROR
+    rolloverSize: 10 MB
+    numberOfFiles: 20
+  spring:
+    servlet:
+      multipartMaxRequestSize: 10MB
+      multipartMaxFileSize: 1MB
+  jvmOptions:
+    -XX:+HeapDumpOnOutOfMemoryError
+    -XX:HeapDumpPath=/app/logs/dump/
+
+## possible values for the objectstore.name can be one of the following options: AWS, Azure, MinIO, IBM Cloud, or GoogleCloud.
+## useKeysFromSecrets should be true and secret/access key should be provided via secretName. 
+## possible values for objectstore.threadPoolType: direct, single, fixed, workstealing, cached
+objectstore:
+  name: "IBM Cloud"
+  endpoint: "https://s3.jp-tok.cloud-object-storage.appdomain.cloud/"
+  port: 1
+  namespace: man-test-dm
+  region: jp-tok
+  accountName:
+  secretName: 
+  filePrefix: doc
+  fileSuffix: files
+  filePartSize: 104857600
+  partBufferSize: 10240
+  serverSideEncryption: false
+  useKeysFromSecrets: false
+  sslEnabled: true
+  proxyRequired: false
+  proxyHost: 
+  proxyPort: 0
+  proxyCredentialRequired: false
+  proxyUsername: 
+  proxyPasswordSecretName:
+  poolSizeTransferMgr: 150
+  connectionTimeout: 600
+  readTimeout: 600
+  threadPoolType: fixed
+  poolSizeGrpc: 150
+  bufferSizeGrpc: 65536
+
+    
+# Test container
+test:
+  image:
+    repository: 'cp.icr.io/cp/opencontent-common-utils'
+    tag: '1.1.62'
+    digest: sha256:f8b5b8bbb346fe35081491581ae32148ce6791cf3a90881926822cbcd5b0d8bb
+    pullPolicy: 'IfNotPresent'
