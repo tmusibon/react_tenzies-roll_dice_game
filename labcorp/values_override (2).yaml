@@ -1,0 +1,377 @@
+global:
+
+  image:
+    pullPolicy: IfNotPresent
+    pullSecret: "ibm-entitlement-key"
+  licenseType: "non-prod"
+  license: true
+
+  networkPolicies:
+    ingress:
+      enabled: true
+      customPolicies:
+      - name: "custom-ingress"
+        fromSelectors:
+        # - namespaceSelector:
+        #     matchLabels:
+        #       name: my-source-namespace
+        #   podSelector:
+        #     matchLabels:
+        #       app.kubernetes.io/name: my-consumer-pod
+        # - podSelector:
+        #     matchLabels:
+        #       role: frontend
+        # - ipBlock:
+        #     cidr: 35.231.164.129/32 # database
+        # - ipBlock:
+        #     cidr: 169.63.104.235/32 # cp.icr.io
+            # except:
+            # - <IP Address>/<block size>
+        ports:
+        - protocol: TCP
+          port: 1433
+          endPort: 1433 
+    egress:
+      enabled: true
+      customPolicies:
+      - name: "custom-egress"
+        toSelectors:
+      #  - namespaceSelector:
+      #      matchLabels:
+      #        name: my-source-namespace
+      #    podSelector:
+      #      matchLabels:
+      #        app.kubernetes.io/name: my-consumer-pod
+      #  - podSelector:
+      #      matchLabels:
+      #        role: frontend
+        # - ipBlock:
+        #     cidr: 35.231.164.129/32 # database
+        # - ipBlock:
+        #     cidr: 169.63.104.235/32 # cp.icr.io
+      #      except:
+      #      - <IP Address>/<block size>
+        ports:
+          - protocol: TCP
+            port: 1433
+            endPort: 1433
+
+ingress:
+  enabled: false
+  
+# documentService:
+#   license: true
+#   enabled: true
+#   sslEnabled: false
+  # useGrpc: false
+  # image:
+  #   pullSecret: ibm-entitlement-key
+
+resourcesInit:
+  enabled: true
+  image:
+    repository: "quay.io/mcgalliarder"
+    name: "b2bi-init"
+    tag: "1.0"
+    digest: sha256:04efcdcb8ce65d1eac5d5b851cc9614b7cbfb0f439d8356495e5098f593a6c61
+    pullPolicy: "IfNotPresent"
+  command:
+ 
+
+appResourcesPVC:
+  enabled: false
+  storageClassName: "standard-rwx"
+  size: 500Mi
+  preDefinedResourcePVCName: resources
+
+appLogsPVC:
+  storageClassName: "standard-rwx"
+  size: 1000Mi
+  preDefinedResourcePVCName: sfg-sfg-logs
+
+appDocumentsPVC:
+  enabled: true
+  storageClassName: "standard-rwx"
+  size: 1000Mi
+  preDefinedResourcePVCName: sfg-sfg-documents
+ 
+dataSetup:
+  enabled: true 
+  upgrade: false
+  image:
+    pullSecret: ibm-entitlement-key
+
+#env:
+#  upgradeCompatibilityVerified: true
+
+# logs:
+  # true if user wish to redirect the application logs to console else false. If provided value is true , then application logs will reside inside containers. No volume mapping will be used.
+  # enableAppLogOnConsole: false
+
+setupCfg:
+  basePort: 30000
+  licenseAcceptEnableSfg: true
+  licenseAcceptEnableEbics: false
+  licenseAcceptEnableFinancialServices: false
+  systemPassphraseSecret: b2b-system-passphrase-secret
+  enableFipsMode: false
+  nistComplianceMode: "off"
+  
+  usessl: true
+  
+  # Provide the DB attributes
+  dbVendor: MSSQL
+  SANDBOX_tls_version: TLSv1.2
+  # equifax-test-db Public IP
+  # dbHost: 35.227.53.96
+  # dbPort: 3342
+  
+  # Used for Cloud SQL Auth Proxy
+  # dbHost: 127.0.0.1
+  # equifax-db-vpc Private IP 
+  dbHost: 172.25.209.6 # change
+  dbPort: 1433
+  # dbUser: dbtestaccount # change
+  dbUser: sqlserver
+  # dbData: b2bi
+  dbData: sfg
+  dbDrivers: mssql-jdbc-12.4.1.jre8.jar
+  # dbDrivers: 11.2.0.jre8.jar
+  # dbDrivers: 12.2.0.jre8.jar
+
+  # Name of DB secret
+  dbSecret: b2b-db-secret
+  dbCreateSchema: true
+  encrypt: false
+
+  dbTruststore: server-ca.pem
+  dbTruststoreSecret: db-truststore-secret
+
+  # dbKeystore: cloud-sql-cert
+  # dbKeystoreSecret: keystore-secret
+
+  oracleUseServiceName: false
+  
+  #Provide the admin email address
+  adminEmailAddress: eli.mcgalliard@ibm.com # change
+  # Provide the SMTP host details 
+  smtpHost: localhost
+  useSslForRmi: false
+
+# asi:
+#   replicaCount: 1
+#   # extraSecrets:
+#   #   - mountAsVolume: false
+#   frontendService:
+#     type: NodePort
+#   backendService:
+#     type: NodePort
+#     ports:
+#       - name: asi-ftp-1
+#         port: 30032
+#         targetPort: 30032
+#         nodePort: 32021
+#         protocol: TCP
+#       - name: asi-sftp-1
+#         port: 30039
+#         targetPort: 30039
+#         nodePort: 32022
+#         protocol: TCP
+#     portRanges:
+#       - name: adapters
+#         portRange: 30350-30400
+#         targetPortRange: 30350-30400
+#         nodePortRange: 30350-30400
+#         protocol: TCP
+#   resources:
+#     limits:
+#       cpu: 4000m
+#       memory: 8Gi
+#     requests:
+#       cpu: 1000m
+#       memory: 4Gi
+#   autoscaling:
+#     enabled: false
+#     minReplicas: 1
+#     maxReplicas: 2
+#     targetCPUUtilizationPercentage: 60
+#   internalAccess:
+#     enableHttps: false
+#   ingress:
+#     internal:
+#       # host: "asi.com"
+#       host:
+#       tls: 
+#         enabled: false
+#         # host: "asi.com"
+#     external:
+#       host:
+#       # host: "asi.com"
+#       tls:
+#         enabled: false
+#         # host: "asi.com"
+
+asi:
+  replicaCount: 1
+  
+  env:
+    jvmOptions:
+    #Refer to global env.extraEnvs for sample values
+    extraEnvs:
+      - name: GNUPGHOME
+        value: /ibm/resources/pgp/.gnupg/
+    
+  frontendService:
+    type: LoadBalancer
+    ports:
+      http: 
+        name: http
+        port: 35000
+        targetPort: http
+        protocol: TCP
+      https: 
+        name: https
+        port: 35001
+        targetPort: https
+        protocol: TCP
+      soa: 
+        name: soa
+        port: 35002
+        targetPort: soa
+        protocol: TCP
+      soassl: 
+        name: soassl
+        port: 35003
+        targetPort: soassl
+        protocol: TCP
+      restHttpAdapter: 
+        name: rest-adapter
+        port: 35007
+        targetPort: rest-adapter
+        protocol: TCP       
+    extraPorts: []     
+    loadBalancerIP:
+    annotations: 
+      cloud.google.com/load-balancer-type: "Internal"
+  
+  backendService:
+    type: LoadBalancer
+    ports: 
+      - name: sftp-migration
+        port: 20002
+        targetPort: 40600
+        protocol: TCP
+      - name: sftp-internal
+        port: 22
+        targetPort: 40400
+        protocol: TCP
+      - name: sftp-external
+        port: 21002
+        targetPort: 40500
+        protocol: TCP
+      - name: myfilegateway
+        port: 20001
+        targetPort: 40300
+        protocol: TCP
+      - name: https-sfg
+        port: 20003
+        targetPort: 40001
+        protocol: TCP
+      - name: soa-ccm
+        port: 20004
+        targetPort: 40040
+        protocol: TCP
+    portRanges: []
+      #- name: future-adapters
+      #  portRange: 22000-22100
+      #  targetPortRange: 42000-42100
+      #  protocol: TCP
+    loadBalancerIP:
+    annotations: 
+      cloud.google.com/load-balancer-type: "Internal"
+      
+  livenessProbe:
+    initialDelaySeconds: 300
+    timeoutSeconds: 120
+    periodSeconds: 60
+    
+  readinessProbe:
+    initialDelaySeconds: 300
+    timeoutSeconds: 60
+    periodSeconds: 60
+  
+  internalAccess:
+    enableHttps: false
+    httpsPort:     
+      
+  externalAccess:
+    protocol: http
+    address: 
+    port:
+    
+  ingress:
+    internal:
+      host:
+      tls:
+        enabled: false
+        secretName: ""
+      extraPaths: []
+      #  - routePrefix: "hello"
+      #    path: "/hello"
+      #    servicePort: "my-http"
+      #    enableHttps: false
+    external:
+      host:
+      tls:
+        enabled: false
+        secretName: ""
+      extraPaths: []
+      #  - routePrefix: "hello"
+      #    path: "/hello"
+      #    servicePort: "my-http"
+      #    enableHttps: false
+      #    access: "internal"
+
+ac:
+  replicaCount: 0
+
+
+api:
+  replicaCount: 1
+  # extraSecrets:
+  #   - mountAsVolume: false
+  frontendService:
+    type: NodePort
+  ports:
+    http:
+      name: http
+      port: 35005
+      targetPort: http
+      nodePort: 30005
+      protocol: TCP
+    https:
+      name: https
+      port: 35006
+      targetPort: https
+      nodePort: 30006
+      protocol: TCP
+  limits:
+    cpu: 4000m
+    memory: 4Gi
+  requests:
+    cpu: 1000m
+    memory: 2Gi
+  internalAccess:
+    enableHttps: false
+  ingress:
+    internal:
+      # host: "api.com"
+      host:
+      tls:
+        enabled: false 
+
+dashboard:
+  enabled: true
+
+purge:
+  enabled: false

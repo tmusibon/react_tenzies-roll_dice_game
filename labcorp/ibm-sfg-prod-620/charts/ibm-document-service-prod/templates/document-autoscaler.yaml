@@ -1,0 +1,20 @@
+# (C) Copyright 2023 Syncsort Incorporated. All rights reserved.
+
+{{- if .Values.autoscaling.enabled }}
+{{- include "sch.config.init" (list . "documentSvc.sch.chart.config.values") -}}
+{{- $compName :=  .sch.chart.components.appInstance.name }}
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "sch.names.fullCompName" (list . $compName) | quote }}
+  labels:
+{{ include "sch.metadata.labels.standard" (list . $compName) | indent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "sch.names.fullCompName" (list . $compName) | quote }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  targetCPUUtilizationPercentage: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

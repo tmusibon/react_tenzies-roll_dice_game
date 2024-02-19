@@ -1,0 +1,8 @@
+# (C) Copyright 2023 Syncsort Incorporated. All rights reserved.
+
+productId=0acf190850514574bb48a3d0ac0341e6
+productName=IBM Sterling File Gateway Enterprise Edition Certified Container
+nonProductId=5f60bccb13b445f8a1037b964bc2f62c
+nonProductName=IBM Sterling File Gateway Enterprise Edition Non-Prod Certified Container
+productVersion=1.0.0.0
+productMetric=VIRTUAL_PROCESSOR_CORE
